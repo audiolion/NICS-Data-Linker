@@ -33,10 +33,13 @@ import net.miginfocom.swing.MigLayout;
 public class GUI extends JFrame implements ActionListener{
 
 	private final AccessController ac;
+	
 	private JMenuBar jmb;
 	private JMenuItem close;
 	private JMenuItem help;
 	private JMenuItem about;
+	private JMenuItem setPath;
+	private JMenuItem setAccessPath;
 	private JButton printNacks;
 	private JButton printAcks;
 	private JButton processNics;
@@ -62,6 +65,8 @@ public class GUI extends JFrame implements ActionListener{
 		close = new JMenuItem("Close");
 		help = new JMenuItem("Help");
 		about = new JMenuItem("About");
+		setPath = new JMenuItem("Set File Path...");
+		setAccessPath = new JMenuItem("Set Access File Path...");
 		
 		printNacks = new JButton("Non-Acknowledged Report");
 		printAcks = new JButton("Acknowledged Report");
@@ -73,6 +78,8 @@ public class GUI extends JFrame implements ActionListener{
 		processNics.addActionListener(this);
 		processAcks.addActionListener(this);
 		about.addActionListener(this);
+		setPath.addActionListener(this);
+		setAccessPath.addActionListener(this);
 		help.addActionListener(this);
 		close.addActionListener(this);
 		
@@ -94,6 +101,8 @@ public class GUI extends JFrame implements ActionListener{
 	private void fillComponents() {
 		JMenu fileMenu = new JMenu("File");
 		JMenu helpMenu = new JMenu("Help");
+		fileMenu.add(setPath);
+		fileMenu.add(setAccessPath);
 		fileMenu.add(close);
 		helpMenu.add(help);
 		helpMenu.add(about);
@@ -132,7 +141,7 @@ public class GUI extends JFrame implements ActionListener{
 	 */
 	public static void main(String[] args) throws InvocationTargetException, InterruptedException{
 		// Set the System look and feel for better user experience
-				try {
+				/*try {
 					for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
 						if ("Nimbus".equals(info.getName())) {
 							UIManager.setLookAndFeel(info.getClassName());
@@ -141,7 +150,7 @@ public class GUI extends JFrame implements ActionListener{
 					}
 				} catch (Exception e){
 					// Will be set to default LAF
-				}
+				}*/
 				Runnable doCreateAndShowGUI = new Runnable(){
 
 					@Override
@@ -149,7 +158,11 @@ public class GUI extends JFrame implements ActionListener{
 						createAndShowGUI();
 					}
 				};
-				SwingUtilities.invokeAndWait(doCreateAndShowGUI);
+			try {
+				UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+			} catch (Exception e){
+			}
+			SwingUtilities.invokeAndWait(doCreateAndShowGUI);
 	}
 	
 	/**
@@ -186,6 +199,14 @@ public class GUI extends JFrame implements ActionListener{
 		
 		if(e.getSource() == this.help){
 			JOptionPane.showMessageDialog(null, "For help or more information about using this application\nplease contact Kelly Spano at kelly.spano@flhealth.org");
+		}
+		
+		if(e.getSource() == this.setPath){
+			ac.setFilePath();
+		}
+		
+		if(e.getSource() == this.setAccessPath){
+			ac.setAccessPath();
 		}
 		
 		if(e.getSource() == this.close){

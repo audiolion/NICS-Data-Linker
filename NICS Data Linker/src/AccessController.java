@@ -29,6 +29,8 @@ public class AccessController {
 	
 	private Database db;
 	private Table patientsTable;
+	private String filePath = null;
+	private String accessPath = null;
 	
 	/**
 	 * Singleton Wrapper class 
@@ -58,7 +60,7 @@ public class AccessController {
 	 */
 	public void openDatabase(String filePath){
 		try {
-			db = Database.open(new File(filePath));
+			db = DatabaseBuilder.open(new File(filePath));
 		} catch (IOException e) {
 			JOptionPane.showMessageDialog(null, "Could not open database.");
 		}
@@ -72,6 +74,32 @@ public class AccessController {
 			db.close();
 		} catch (IOException e) {
 			JOptionPane.showMessageDialog(null, "Could not properly close database.");
+		}
+	}
+	
+	public void setFilePath(){
+		JOptionPane.showMessageDialog(null, "Please select the default file path to open to.");
+		FileChooser fc = new FileChooser();
+		File file = fc.getDirectoryPath();
+		String filePath = file.getAbsolutePath();
+		if(filePath.equalsIgnoreCase("No File Selected")){
+			return;
+		}
+		else{
+			this.filePath = filePath;
+		}
+	}
+	
+	public void setAccessPath(){
+		JOptionPane.showMessageDialog(null, "Please select the default file path to open to.");
+		FileChooser fc = new FileChooser();
+		File file = fc.getDirectoryPath();
+		String filePath = file.getAbsolutePath();
+		if(filePath.equalsIgnoreCase("No File Selected")){
+			return;
+		}
+		else{
+			this.accessPath = filePath;
 		}
 	}
 	
@@ -113,7 +141,7 @@ public class AccessController {
 	public void setAcknowledgements(ArrayList<String> ackData){
 		try{
 			patientsTable = db.getTable("Patients");
-			Cursor cur = Cursor.createCursor(patientsTable);
+			Cursor cur = CursorBuilder.createCursor(patientsTable);
 			while(cur.moveToNextRow()){
 				for(int i = 0; i < ackData.size(); i++){
 					if(cur.getCurrentRowValue(patientsTable.getColumn("Meditech_ID")).toString().contains(ackData.get(i))){
@@ -135,11 +163,17 @@ public class AccessController {
 	public void processNics() throws IOException{
 		JOptionPane.showMessageDialog(null, "Please select the NICS files you would like to process.\nYou can select multiple files by holding down the 'CTRL' key while you select.");
 		FileReader fr = new FileReader();
-		FileChooser fc = new FileChooser();
-		String[] filePaths = fc.getFiles();
+		FileChooser fc;
+		if(filePath != null){
+			fc = new FileChooser(filePath);
+		}else{
+			fc = new FileChooser();
+		}
+		String[] filePaths = fc.getFilePaths();
 		if(filePaths[0].equalsIgnoreCase("No Selection")){
 			return;
 		}
+		filePath = fc.getDirPath();		
 		ArrayList<String> data = fr.readFile(filePaths);
 		ArrayList<String> nics = fr.getNicsData(data);
 		if(nics.size() == 0){
@@ -147,12 +181,17 @@ public class AccessController {
 			return;
 		}
 		JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to write information to.");
-		FileChooser fc2 = new FileChooser();
-		String filePath = fc2.getFile();
-		System.out.println(filePath);
+		FileChooser fc2;
+		if(accessPath != null){
+			fc2 = new FileChooser(accessPath);
+		}else{
+			fc2 = new FileChooser();
+		}
+		String filePath = fc2.getFilePath();
 		if(filePath.equalsIgnoreCase("No File Selected")){
 			return;
 		}
+		accessPath = filePath;
 		AccessController ac = AccessController.getInstance();
 		ac.openDatabase(filePath);
 		ac.writeData(nics);
@@ -169,11 +208,17 @@ public class AccessController {
 	public void processAcks() throws IOException{
 		JOptionPane.showMessageDialog(null, "Please select the ACK files you would like to process.\nYou can select multiple files by holding down the 'CTRL' key while you select.");
 		FileReader fr = new FileReader();
-		FileChooser fc = new FileChooser();
-		String[] filePaths = fc.getFiles();
+		FileChooser fc;
+		if(filePath != null){
+			fc = new FileChooser(filePath);
+		}else{
+			fc = new FileChooser();
+		}
+		String[] filePaths = fc.getFilePaths();
 		if(filePaths[0].equalsIgnoreCase("No Selection")){
 			return;
 		}
+		filePath = fc.getDirPath();
 		ArrayList<String> data = fr.readFile(filePaths);
 		ArrayList<String> acks = fr.getAckData(data);
 		if(acks.size() == 0){
@@ -181,8 +226,13 @@ public class AccessController {
 			return;
 		}
 		JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to write information to.");
-		FileChooser fc2 = new FileChooser();
-		String filePath = fc2.getFile();
+		FileChooser fc2;
+		if(accessPath != null){
+			fc2 = new FileChooser(accessPath);
+		}else{
+			fc2 = new FileChooser();
+		}
+		String filePath = fc2.getFilePath();
 		if(filePath.equalsIgnoreCase("No File Selected")){
 			return;
 		}
@@ -199,8 +249,13 @@ public class AccessController {
 	 */
 	public void printAcknowledgements(){
 		JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to retrieve information from.");
-		FileChooser fc2 = new FileChooser();
-		String filePath = fc2.getFile();
+		FileChooser fc2;
+		if(accessPath != null){
+			fc2 = new FileChooser(accessPath);
+		}else{
+			fc2 = new FileChooser();
+		}
+		String filePath = fc2.getFilePath();
 		if(filePath.equalsIgnoreCase("No File Selected")){
 			return;
 		}
@@ -209,7 +264,7 @@ public class AccessController {
 		ArrayList<String> list = new ArrayList<String>();
 		try{
 			patientsTable = db.getTable("Patients");
-			Cursor cur = Cursor.createCursor(patientsTable);
+			Cursor cur = CursorBuilder.createCursor(patientsTable);
 			while(cur.moveToNextRow()){
 				if(cur.getCurrentRowValue(patientsTable.getColumn("Acknowledged")).toString().contains("Yes")){
 					list.add(cur.getCurrentRowValue(patientsTable.getColumn("Patient_Name")).toString() + "," +
@@ -240,8 +295,13 @@ public class AccessController {
 	 */
 	public void printNacknowledgements(){
 		JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to retrieve information from.");
-		FileChooser fc2 = new FileChooser();
-		String filePath = fc2.getFile();
+		FileChooser fc2;
+		if(accessPath != null){
+			fc2 = new FileChooser(accessPath);
+		}else{
+			fc2 = new FileChooser();
+		}
+		String filePath = fc2.getFilePath();
 		if(filePath.equalsIgnoreCase("No File Selected")){
 			return;
 		}
@@ -250,7 +310,7 @@ public class AccessController {
 		ArrayList<String> list = new ArrayList<String>();
 		try{
 			patientsTable = db.getTable("Patients");
-			Cursor cur = Cursor.createCursor(patientsTable);
+			Cursor cur = CursorBuilder.createCursor(patientsTable);
 			while(cur.moveToNextRow()){
 				if(!cur.getCurrentRowValue(patientsTable.getColumn("Acknowledged")).toString().contains("Yes")){
 					list.add(cur.getCurrentRowValue(patientsTable.getColumn("Patient_Name")).toString() + "," +

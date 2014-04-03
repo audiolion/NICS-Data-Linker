@@ -1,4 +1,5 @@
 import java.io.File;
+
 import javax.swing.JFileChooser;
 
 /**
@@ -13,12 +14,15 @@ import javax.swing.JFileChooser;
  */
 
 public class FileChooser {
-	
-	/*
-	 * Default Constructor
-	 */
+	JFileChooser fc;
+	File directoryPath;
+	String dirPath;
 	public FileChooser(){
-		
+		fc = new JFileChooser();
+	}
+	public FileChooser(String filePath){
+		fc = new JFileChooser(filePath);
+		dirPath = filePath;
 	}
 	
 	/**
@@ -26,13 +30,35 @@ public class FileChooser {
 	 * If no selection was made "No File Selected" is returned.
 	 * @return returnVal - the file name path
 	 */
-	public String getFile(){
-		JFileChooser fc = new JFileChooser();
+	public String getFilePath(){
+		if(directoryPath != null){
+			fc.setCurrentDirectory(this.directoryPath);
+		}
 		fc.setMultiSelectionEnabled(false);
 		if(fc.showOpenDialog(fc) == JFileChooser.APPROVE_OPTION){
 			File file = fc.getSelectedFile();
-			String returnVal = file.getAbsolutePath();
-			return returnVal;
+			String filePath = file.getAbsolutePath();
+			this.setDirPath(filePath);
+			return filePath;
+		}else{
+			return "No File Selected";
+		}
+	}
+	
+	/**
+	 * Method for single file selection that is optimized for NICS processing.
+	 * If no selection was made "No File Selected" is returned.
+	 * @return returnVal - the file name path
+	 */
+	public String getFilePath(File directoryPath){
+		if(directoryPath != null){
+			this.directoryPath = directoryPath;
+		}
+		fc.setCurrentDirectory(this.directoryPath);
+		fc.setMultiSelectionEnabled(false);
+		if(fc.showOpenDialog(fc) == JFileChooser.APPROVE_OPTION){
+			this.dirPath = fc.getSelectedFile().getAbsolutePath();
+			return dirPath;
 		}else{
 			return "No File Selected";
 		}
@@ -43,9 +69,36 @@ public class FileChooser {
 	 * If no selection was made "No Selection" is returned at index 0.
 	 * @return returnVal - a string array containing the file paths
 	 */
-	public String[] getFiles(){
-		JFileChooser fc = new JFileChooser();
-		fc.setMultiSelectionEnabled(true);
+	public String[] getFilePaths(){
+		if(directoryPath != null){
+			fc.setCurrentDirectory(this.directoryPath);
+		}
+		fc.setMultiSelectionEnabled(true);		
+		if(fc.showOpenDialog(fc) == JFileChooser.APPROVE_OPTION){
+			File[] files = fc.getSelectedFiles();
+			String[] returnVal = new String[files.length];
+			for(int i = 0; i < files.length; i++){
+				returnVal[i] = files[i].getAbsolutePath();
+			}
+			this.dirPath = returnVal[0];
+			return returnVal;
+		}else{
+			String[] returnVal = new String[]{"No Selection"};
+			return returnVal;
+		}		
+	}
+	
+	/**
+	 * Method for multiple file selection that is optimized for NICS processing.
+	 * If no selection was made "No Selection" is returned at index 0.
+	 * @return returnVal - a string array containing the file paths
+	 */
+	public String[] getFilePaths(File directoryPath){
+		if(directoryPath != null){
+			this.directoryPath = directoryPath;
+		}
+		fc.setCurrentDirectory(this.directoryPath);
+		fc.setMultiSelectionEnabled(true);		
 		if(fc.showOpenDialog(fc) == JFileChooser.APPROVE_OPTION){
 			File[] files = fc.getSelectedFiles();
 			String[] returnVal = new String[files.length];
@@ -57,6 +110,28 @@ public class FileChooser {
 			String[] returnVal = new String[]{"No Selection"};
 			return returnVal;
 		}		
+	}
+	
+	public File getDirectoryPath(){
+		fc.setMultiSelectionEnabled(false);
+		fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		File file = null;
+		if(fc.showSaveDialog(fc) == JFileChooser.APPROVE_OPTION){
+			file = fc.getSelectedFile();
+		}
+		return file;
+	}
+	
+	public void setDirectoryPath(File directoryPath){
+		this.directoryPath = directoryPath;
+	}
+	
+	public void setDirPath(String dirPath){
+		this.dirPath = dirPath;
+	}
+	
+	public String getDirPath(){
+		return this.dirPath;
 	}
 	
 }
