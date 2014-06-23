@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 
 import javax.swing.JOptionPane;
+import javax.swing.JPasswordField;
 
 import com.healthmarketscience.jackcess.*;
 
@@ -27,6 +29,7 @@ import com.healthmarketscience.jackcess.*;
 
 public class AccessController {
 	
+	private static final char[] PASSWORD = {'p','a','$','$','w','o','r','d'};
 	private Database db;
 	private Table patientsTable;
 	private String filePath = null;
@@ -101,6 +104,23 @@ public class AccessController {
 		else{
 			this.accessPath = filePath;
 		}
+	}
+	
+	public boolean verifyPassword(){
+		JPasswordField passwordField = new JPasswordField();
+		int input = 5;
+		while(input != JOptionPane.CANCEL_OPTION && input != JOptionPane.CLOSED_OPTION){
+			input = JOptionPane.showConfirmDialog(null, passwordField, "Enter Password", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);			
+			if(input == JOptionPane.OK_OPTION){ // OK Button
+				if(passwordField.getPassword() != null && Arrays.equals(passwordField.getPassword(), PASSWORD)){
+					return true;
+				}else{
+					JOptionPane.showMessageDialog(null, "Password incorrect, please try again.");
+				}
+			}
+			passwordField.setText("");
+		}
+		return false;
 	}
 	
 	/**

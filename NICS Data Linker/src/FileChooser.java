@@ -118,6 +118,8 @@ public class FileChooser {
 		File file = null;
 		if(fc.showSaveDialog(fc) == JFileChooser.APPROVE_OPTION){
 			file = fc.getSelectedFile();
+		}else{
+			file = new File("No File Selected");
 		}
 		return file;
 	}

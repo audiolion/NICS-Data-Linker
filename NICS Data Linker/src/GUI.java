@@ -202,11 +202,15 @@ public class GUI extends JFrame implements ActionListener{
 		}
 		
 		if(e.getSource() == this.setPath){
-			ac.setFilePath();
+			if(ac.verifyPassword()){
+				ac.setFilePath();
+			}
 		}
 		
 		if(e.getSource() == this.setAccessPath){
-			ac.setAccessPath();
+			if(ac.verifyPassword()){
+				ac.setAccessPath();
+			}
 		}
 		
 		if(e.getSource() == this.close){
