@@ -7,6 +7,7 @@
 	<classpathentry kind="lib" path="C:/Users/castnerr/Downloads/junit-4.0.jar"/>
 	<classpathentry kind="lib" path="C:/Users/castnerr/Downloads/commons-lang-2.0.jar"/>
 	<classpathentry kind="lib" path="C:/Users/castnerr/Downloads/commons-logging-1.0.3.jar"/>
+	<classpathentry kind="lib" path="C:/Users/castnerr/Downloads/com4j-20120426-2/com4j.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

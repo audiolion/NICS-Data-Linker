@@ -1,10 +1,19 @@
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 
+import javax.imageio.ImageIO;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -13,6 +22,8 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
@@ -32,6 +43,9 @@ import net.miginfocom.swing.MigLayout;
 @SuppressWarnings("serial")
 public class GUI extends JFrame implements ActionListener{
 
+	private final String USER_DEFAULT = "Username";
+	private final String PASS_DEFAULT = "Password";
+	
 	private final AccessController ac;
 	
 	private JMenuBar jmb;
@@ -45,6 +59,10 @@ public class GUI extends JFrame implements ActionListener{
 	private JButton processNics;
 	private JButton processAcks;
 	private JPanel btnPanel;
+	
+	private JTextField usernameField;
+	private JPasswordField passwordField;
+	private JPanel loginPanel;
 	
 	/**
 	 * Constructor for GUI window
@@ -93,6 +111,53 @@ public class GUI extends JFrame implements ActionListener{
 		btnPanel.add(printAcks, "wrap");
 		btnPanel.add(new JLabel("4."), "align label");
 		btnPanel.add(printNacks, "wrap");		
+		
+		loginPanel = new JPanel();
+		usernameField = new JTextField(20);
+		passwordField = new JPasswordField(20);
+		usernameField.setText(USER_DEFAULT);
+		passwordField.setEchoChar((char)0);
+		passwordField.setText(PASS_DEFAULT);
+		
+		usernameField.setText(USER_DEFAULT);
+		usernameField.setForeground(Color.GRAY);
+		passwordField.setText(PASS_DEFAULT);
+		passwordField.setForeground(Color.GRAY);
+		usernameField.addFocusListener(new FocusListener(){
+			@Override
+			public void focusGained(FocusEvent e){
+				if(usernameField.getText().equals(USER_DEFAULT)){
+					usernameField.setText("");
+				}
+			}
+			@Override
+			public void focusLost(FocusEvent e){
+				if(usernameField.getText().equals(""))
+					usernameField.setText(USER_DEFAULT);
+			}
+		});
+		passwordField.addFocusListener(new FocusListener(){
+			@Override
+			public void focusGained(FocusEvent e){
+				if(new String(passwordField.getPassword()).equals(PASS_DEFAULT)){
+					passwordField.setText("");
+					passwordField.setEchoChar('*');
+				}
+			}
+			@Override
+			public void focusLost(FocusEvent e){
+				if(passwordField.getPassword().length == 0){
+					passwordField.setEchoChar((char)0);
+					passwordField.setText(PASS_DEFAULT);
+				}					
+			}
+		});
+		loginPanel.setLayout(new MigLayout());
+		loginPanel.add(new JLabel("Elevation Required"), "wrap, align");
+		loginPanel.add(usernameField, "wrap, align");
+		loginPanel.add(passwordField, "wrap, align");
+		loginPanel.add(new JLabel("Domain: FLH"), "align");
+		loginPanel.setBackground(new Color(135, 206, 250, 50));
 	}
 	
 	/**
@@ -202,15 +267,17 @@ public class GUI extends JFrame implements ActionListener{
 		}
 		
 		if(e.getSource() == this.setPath){
-			if(ac.verifyPassword()){
+			if(authenticate())
 				ac.setFilePath();
-			}
+			else
+				JOptionPane.showMessageDialog(null, "Authentication failed: either unknown user or bad password.");
 		}
 		
 		if(e.getSource() == this.setAccessPath){
-			if(ac.verifyPassword()){
+			if(authenticate())
 				ac.setAccessPath();
-			}
+			else
+				JOptionPane.showMessageDialog(null, "Authentication failed: either unknown user or bad password.");
 		}
 		
 		if(e.getSource() == this.close){
@@ -218,4 +285,19 @@ public class GUI extends JFrame implements ActionListener{
 		}
 	}
 
+	//todo debug method
+	//incorrect password hangs
+	//dont give back auth failed msg when cancel or exit
+	private boolean authenticate(){
+		java.net.URL path = this.getClass().getResource("/uac_icon.png");
+		BufferedImage imgs = null;
+		try{
+			imgs = ImageIO.read(path);
+		}catch(IOException e){
+		}
+		Icon uacIcon = new ImageIcon(imgs);
+		JOptionPane.showMessageDialog(null, loginPanel, "User Account Controls", JOptionPane.OK_CANCEL_OPTION, uacIcon);
+		return ac.verifyPassword(usernameField.getText(), new String(passwordField.getPassword()));
+		
+	}
 }

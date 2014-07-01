@@ -5,13 +5,15 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 
+import javax.security.auth.login.LoginException;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
+import javax.swing.JTextField;
 
 import com.healthmarketscience.jackcess.*;
+
 
 /**
  * This class is a controller as part of the Model-View-Controller
@@ -29,7 +31,7 @@ import com.healthmarketscience.jackcess.*;
 
 public class AccessController {
 	
-	private static final char[] PASSWORD = {'p','a','$','$','w','o','r','d'};
+	private static final String ADMINACCT = "ryantest";
 	private Database db;
 	private Table patientsTable;
 	private String filePath = null;
@@ -106,21 +108,14 @@ public class AccessController {
 		}
 	}
 	
-	public boolean verifyPassword(){
-		JPasswordField passwordField = new JPasswordField();
-		int input = 5;
-		while(input != JOptionPane.CANCEL_OPTION && input != JOptionPane.CLOSED_OPTION){
-			input = JOptionPane.showConfirmDialog(null, passwordField, "Enter Password", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);			
-			if(input == JOptionPane.OK_OPTION){ // OK Button
-				if(passwordField.getPassword() != null && Arrays.equals(passwordField.getPassword(), PASSWORD)){
-					return true;
-				}else{
-					JOptionPane.showMessageDialog(null, "Password incorrect, please try again.");
-				}
-			}
-			passwordField.setText("");
+	public boolean verifyPassword(String username, String password){
+		boolean authResult = false;
+		try{
+			MemberOfAuth auth = new MemberOfAuth("FLH.LOCAL");
+			authResult = auth.isMemberOf("GGH Admins", username, password);
+		}catch(LoginException e){
 		}
-		return false;
+		return authResult;
 	}
 	
 	/**
