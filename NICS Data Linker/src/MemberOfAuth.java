@@ -1,6 +1,9 @@
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Vector;
 
 import javax.naming.AuthenticationException;
 import javax.naming.CompositeName;
@@ -15,15 +18,9 @@ import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
-import javax.naming.CommunicationException;
-import javax.naming.Context;
-import javax.naming.NamingEnumeration;
-import javax.naming.NamingException;
-import javax.naming.directory.Attribute;
-import javax.naming.directory.Attributes;
-import javax.naming.directory.DirContext;
-import javax.naming.directory.InitialDirContext;
+import javax.naming.ldap.InitialLdapContext;
 import javax.naming.ldap.LdapContext;
+import javax.naming.CommunicationException;
 import javax.security.auth.login.AccountException;
 import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
@@ -31,10 +28,6 @@ import javax.security.auth.login.LoginException;
 public class MemberOfAuth{
 
 	private final String domainName;
-    private static final String MEMBER_OF = "memberOf";
-    private static final String[] attrIdsToSearch = new String[] { MEMBER_OF };
-    public static final String SEARCH_BY_SAM_ACCOUNT_NAME = "(sAMAccountName=%s)";
-    public static final String SEARCH_GROUP_BY_GROUP_CN = "(&(objectCategory=group)(cn={0}))";
     private static final String CONTEXT_FACTORY_CLASS = "com.sun.jndi.ldap.LdapCtxFactory";
     private String ldapServerUrls[];
     private int lastLdapUrlIndex;
@@ -81,75 +74,79 @@ public class MemberOfAuth{
         }
     }
     
-    public boolean isMemberOf(String groupName, String username, String password) throws LoginException{
-    	 if(ldapServerUrls == null || ldapServerUrls.length == 0) {
-             throw new AccountException("Unable to find ldap servers");
-         }
-         if(username == null || password == null || username.trim().length() == 0 || password.trim().length() == 0) {
-             throw new FailedLoginException("Username or password is empty");
-         }
-         int retryCount = 0;
-         int currentLdapUrlIndex = lastLdapUrlIndex;
-         do{
-             retryCount++;
-             try{
-                 Hashtable<Object, Object> env = new Hashtable<Object, Object>();
-                 env.put(Context.INITIAL_CONTEXT_FACTORY, CONTEXT_FACTORY_CLASS);
-                 env.put(Context.PROVIDER_URL, ldapServerUrls[currentLdapUrlIndex]);
-                 env.put(Context.SECURITY_PRINCIPAL, username + "@" + domainName);
-                 env.put(Context.SECURITY_CREDENTIALS, password);
-                 InitialDirContext context = new InitialDirContext(env);
-                 String filter = String.format(SEARCH_BY_SAM_ACCOUNT_NAME, username);
-                 SearchControls constraints = new SearchControls();
-                 constraints.setSearchScope(SearchControls.SUBTREE_SCOPE);
-                 constraints.setReturningAttributes(attrIdsToSearch);
-                 String[] dcComponents = domainName.split("\\.");
-                 String userBase = "dc=" + dcComponents[0] + ",dc=" + dcComponents[1];
-                 NamingEnumeration results = context.search(userBase, filter,constraints);
-                 // Fail if no entries found
-                 if(results == null || !results.hasMore()){
-                     return false;
-                 }
-
-                 // Get result for the first entry found
-                 SearchResult result = (SearchResult) results.next();
-
-                 // Get the entry's distinguished name
-                 NameParser parser = context.getNameParser("");
-                 Name contextName = parser.parse(context.getNameInNamespace());
-                 Name baseName = parser.parse(userBase);
-
-                 Name entryName = parser.parse(new CompositeName(result.getName()).get(0));
-
-                 // Get the entry's attributes
-                 Attributes attrs = result.getAttributes();
-                 Attribute attr = attrs.get(attrIdsToSearch[0]);
-
-                 NamingEnumeration e = attr.getAll();
-                 while(e.hasMore()){
-                     String value = (String) e.next();
-                     if(value.contains("GGH Admins") || value.contains("SSMH Admins") || value.contains("Elevated Users")){
-                    	 return true;
-                     }
-                 }
-                 lastLdapUrlIndex = currentLdapUrlIndex;
-             }catch(CommunicationException exp){
-                 // if the exception of type communication we can assume the AD is not reachable hence retry can be attempted with next available AD
-                 if(retryCount < ldapServerUrls.length){
-                     currentLdapUrlIndex++;
-                     if(currentLdapUrlIndex == ldapServerUrls.length){
-                         currentLdapUrlIndex = 0;
-                     }
-                     continue;
-                 }
-                 return false;
-             }catch(AuthenticationException exp){
-            	 return false;
-             }catch(Throwable throwable){
-                 return false;
-             }
-         }while(true);
-
-        
+    public boolean isMemberOf(String group, String user, String pass){
+    	Hashtable<String, String> env = new Hashtable<String, String>();
+    	env.put(Context.INITIAL_CONTEXT_FACTORY, CONTEXT_FACTORY_CLASS);
+    	env.put(Context.PROVIDER_URL, ldapServerUrls[lastLdapUrlIndex]);
+    	env.put(Context.SECURITY_PRINCIPAL, user + "@" + domainName);
+    	env.put(Context.SECURITY_CREDENTIALS, pass);
+    	 
+    	DirContext ctx;
+    	int retryCount = 0;
+    	int currentLdapUrlIndex = lastLdapUrlIndex;
+    	do{
+    		if(retryCount > 0){
+    			env.remove(Context.PROVIDER_URL);
+    			env.put(Context.PROVIDER_URL, ldapServerUrls[currentLdapUrlIndex]);
+    		}
+    		retryCount++;
+    	try {
+    	    //Authenticate the logon user
+    	    ctx = new InitialDirContext(env);
+    	    String searchBase = "DC=FLH,DC=LOCAL";
+    	    
+    	    // Perform an exact group match with the "memberOf" attribute.
+    	    StringBuilder searchFilter = new StringBuilder("(&");
+    	    searchFilter.append("(objectClass=person)");
+    	    searchFilter.append("(sAMAccountName="+user+")");
+    	    searchFilter.append("(memberOf=CN=GGH Admins,OU=Admin Accounts,OU=Information Services,OU=GGH,DC=FLH,DC=LOCAL)"); // Add code to query memberOf 
+    	    searchFilter.append(")");																						// from GGH Admin group so its not hard coded
+    	    								// also SSMH Admin and Domain Admin functionality
+    	    SearchControls sCtrl = new SearchControls();
+    	    sCtrl.setSearchScope(SearchControls.SUBTREE_SCOPE);
+    	 
+    	    NamingEnumeration answer = ctx.search(searchBase, searchFilter.toString(), sCtrl);
+    	    boolean passes = false;
+    	 
+    	    if (answer.hasMoreElements()) {
+    	        passes = true;
+    	    }
+    	 
+    	    if (passes) {
+    	        // The user belongs to the group. Do something...
+    	    	return true;
+    	    }
+    	} catch(CommunicationException exp){
+            // if the exception of type communication we can assume the AD is not reachable hence retry can be attempted with next available AD
+            currentLdapUrlIndex++;
+        }catch(AuthenticationException exp){
+       	 	return false;
+        }catch(Throwable throwable){
+        	return false;
+        }
+    	}while(retryCount < ldapServerUrls.length);
+    	
+    	return false;
     }
+    public SearchResult findAccountByAccountName(DirContext ctx, String ldapSearchBase, String accountName) throws NamingException {
+
+        String searchFilter = "(&(objectClass=user)(sAMAccountName=" + accountName + "))";
+        SearchControls searchControls = new SearchControls();
+        searchControls.setSearchScope(SearchControls.SUBTREE_SCOPE);
+        NamingEnumeration<SearchResult> results = ctx.search(ldapSearchBase, searchFilter, searchControls);
+        
+        SearchResult searchResult = null;
+        if(results.hasMoreElements()) {
+             searchResult = (SearchResult) results.nextElement();
+
+            //make sure there is not another item available, there should be only 1 match
+            if(results.hasMoreElements()) {
+                System.err.println("Matched multiple users for the accountName: " + accountName);
+                return null;
+            }
+        }
+        
+        return searchResult;
+    }
+
 }

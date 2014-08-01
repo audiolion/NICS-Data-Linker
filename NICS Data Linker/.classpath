@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="C:/Users/castnerr/Downloads/jackcess-2.0.4.jar"/>
+	<classpathentry kind="lib" path="C:/Users/castnerr/Downloads/jackcess-2.0.4.jar" sourcepath="C:/Users/castnerr/Downloads/jackcess-2.0.4-sources.jar"/>
 	<classpathentry kind="lib" path="C:/Users/castnerr/Downloads/miglayout-4.0.jar"/>
 	<classpathentry kind="lib" path="C:/Users/castnerr/Downloads/log4j-1.2.7.jar"/>
 	<classpathentry kind="lib" path="C:/Users/castnerr/Downloads/junit-4.0.jar"/>

@@ -1,16 +1,23 @@
 import java.awt.Dimension;
 import java.awt.Toolkit;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.security.auth.login.LoginException;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
+import javax.swing.JPopupMenu;
+import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 
 import com.healthmarketscience.jackcess.*;
 
@@ -31,7 +38,6 @@ import com.healthmarketscience.jackcess.*;
 
 public class AccessController {
 	
-	private static final String ADMINACCT = "ryantest";
 	private Database db;
 	private Table patientsTable;
 	private String filePath = null;
@@ -110,11 +116,8 @@ public class AccessController {
 	
 	public boolean verifyPassword(String username, String password){
 		boolean authResult = false;
-		try{
-			MemberOfAuth auth = new MemberOfAuth("FLH.LOCAL");
-			authResult = auth.isMemberOf("GGH Admins", username, password);
-		}catch(LoginException e){
-		}
+		MemberOfAuth auth = new MemberOfAuth("FLH.LOCAL");
+		authResult = auth.isMemberOf("GGH Admins", username, password);
 		return authResult;
 	}
 	
@@ -128,20 +131,37 @@ public class AccessController {
 	public void writeData(ArrayList<String> nicsData){
 		try {
 			patientsTable = db.getTable("Patients");
-		} catch (IOException e) {
+		}catch(IOException e){
 			JOptionPane.showMessageDialog(null, "Could not find or open table.");
 		}
 		for(int i = 0; i < nicsData.size(); i++){
 			if(i%3 == 0){
-				try {
+				try{
 					DateFormat dateFormat = new SimpleDateFormat();
 					Date date = new Date();
 					patientsTable.addRow(Column.AUTO_NUMBER, nicsData.get(i+1), nicsData.get(i), "", nicsData.get(i+2), dateFormat.format(date));
-				} catch (IOException e) {
+				}catch(IOException e){
 					JOptionPane.showMessageDialog(null, "Could not add a row to the Patients Table.");
 				}
 			}
 		}
+	}
+	
+	public void writeResolvedNack(int rowID){
+		try{
+			patientsTable = db.getTable("Patients");
+		}catch(IOException e){
+			JOptionPane.showMessageDialog(null, "Could not find or open table.");
+		}
+		IndexCursor cursor;
+		try{
+			cursor = CursorBuilder.createCursor(patientsTable.getIndex("Patient_ID"));
+			for(Row row : cursor.newEntryIterable(rowID)){
+				System.out.println(cursor.getCurrentRowValue(patientsTable.getColumn("Patient_ID")));
+			    //cursor.setCurrentRowValue(patientsTable.getColumn("Resolved"), new String("Yes"));
+			}
+		}catch(IOException e){
+		}                        
 	}
 	
 	/**
@@ -281,12 +301,11 @@ public class AccessController {
 			patientsTable = db.getTable("Patients");
 			Cursor cur = CursorBuilder.createCursor(patientsTable);
 			while(cur.moveToNextRow()){
-				if(cur.getCurrentRowValue(patientsTable.getColumn("Acknowledged")).toString().contains("Yes")){
+				if(String.valueOf(cur.getCurrentRowValue(patientsTable.getColumn("Acknowledged"))).contains("Yes")){
 					list.add(cur.getCurrentRowValue(patientsTable.getColumn("Patient_Name")).toString() + "," +
 				cur.getCurrentRowValue(patientsTable.getColumn("Meditech_ID")).toString() + "," +
 				cur.getCurrentRowValue(patientsTable.getColumn("Admit_Update")).toString() + "," +
 				cur.getCurrentRowValue(patientsTable.getColumn("Date/Time")).toString());
-				
 				}
 			}
 			ArrayListTableModel altm = new ArrayListTableModel(list);
@@ -327,12 +346,13 @@ public class AccessController {
 			patientsTable = db.getTable("Patients");
 			Cursor cur = CursorBuilder.createCursor(patientsTable);
 			while(cur.moveToNextRow()){
-				if(!cur.getCurrentRowValue(patientsTable.getColumn("Acknowledged")).toString().contains("Yes")){
+				if(!String.valueOf(cur.getCurrentRowValue(patientsTable.getColumn("Acknowledged"))).contains("Yes")
+						&& !String.valueOf(cur.getCurrentRowValue(patientsTable.getColumn("Resolved"))).contains("Yes")){
 					list.add(cur.getCurrentRowValue(patientsTable.getColumn("Patient_Name")).toString() + "," +
 					cur.getCurrentRowValue(patientsTable.getColumn("Meditech_ID")).toString() + "," +
 					cur.getCurrentRowValue(patientsTable.getColumn("Admit_Update")).toString() + "," +
 					cur.getCurrentRowValue(patientsTable.getColumn("Date/Time")).toString());
-				}
+				}				
 			}
 			ArrayListTableModel altm = new ArrayListTableModel(list);
 			altm.pack();
@@ -348,4 +368,68 @@ public class AccessController {
 		}
 		ac.closeDatabase();
 	}
+	
+	public void resolveNacks(){
+		JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to retrieve information from.");
+		FileChooser fc2;
+		if(accessPath != null){
+			fc2 = new FileChooser(accessPath);
+		}else{
+			fc2 = new FileChooser();
+		}
+		String filePath = fc2.getFilePath();
+		if(filePath.equalsIgnoreCase("No File Selected")){
+			return;
+		}
+		AccessController ac = AccessController.getInstance();
+		ac.openDatabase(filePath);
+		ArrayList<String> list = new ArrayList<String>();
+		try{
+			patientsTable = db.getTable("Patients");
+			Cursor cur = CursorBuilder.createCursor(patientsTable);
+			while(cur.moveToNextRow()){
+				if(!cur.getCurrentRowValue(patientsTable.getColumn("Acknowledged")).toString().contains("Yes")
+						&& !cur.getCurrentRowValue(patientsTable.getColumn("Resolved")).toString().contains("Yes")){
+					list.add(cur.getCurrentRowValue(patientsTable.getColumn("Patient_Name")).toString() + "," +
+					cur.getCurrentRowValue(patientsTable.getColumn("Meditech_ID")).toString() + "," +
+					cur.getCurrentRowValue(patientsTable.getColumn("Admit_Update")).toString() + "," +
+					cur.getCurrentRowValue(patientsTable.getColumn("Date/Time")).toString());
+					System.out.println("!");
+				}
+			}
+			ArrayListTableModel altm = new ArrayListTableModel(list);
+			altm.pack();
+			Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+			// Compute and set the location so the frame is centered
+			int x = screen.width/2-altm.getSize().width/2;
+			int y = screen.height/2-altm.getSize().height/2;
+			altm.setLocation(x, y);
+			altm.setTitle("Non-Acknowledged Patients");
+			altm.setVisible(true);
+			altm.addMouseListener(new MouseAdapter(){
+				boolean isClicked;
+				public void mouseClicked(MouseEvent mouseEvent){
+					JTable table = (JTable) mouseEvent.getSource();
+					int row = table.getSelectedRow();
+					if(isClicked){
+						writeResolvedNack(row);
+					}else{
+						isClicked = true;
+						Timer t = new Timer("doubleClickTimer", false);
+						t.schedule(new TimerTask(){
+							@Override
+							public void run(){
+								isClicked = false;
+							}
+						}, (Long) Toolkit.getDefaultToolkit().getDesktopProperty("awt.multiClickInterval"));
+					}
+				}
+			});
+		}catch(IOException e){
+			JOptionPane.showMessageDialog(null, "Could not read Patients Table.");
+		}
+		ac.closeDatabase();
+	}
+	
+
 }
