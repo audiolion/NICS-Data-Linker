@@ -1,13 +1,17 @@
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Point;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
@@ -21,7 +25,10 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
+import javax.swing.JPopupMenu;
+import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
@@ -279,11 +286,94 @@ public class GUI extends JFrame implements ActionListener{
 		}
 		
 		if(e.getSource() == this.resolveNacks){
-			ac.resolveNacks();
+			ArrayList<String> list = ac.getUnresolvedNacks();
+			ArrayListTableModel altm = new ArrayListTableModel(list);
+			altm.pack();
+			Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+			// Compute and set the location so the frame is centered
+			int x = screen.width/2-altm.getSize().width/2;
+			int y = screen.height/2-altm.getSize().height/2;
+			altm.setLocation(x, y);
+			altm.setTitle("Non-Acknowledged Patients");
+			altm.setVisible(true);
+			altm.table.addMouseListener(new MouseAdapter(){
+				public void mousePressed(MouseEvent e){
+					JTable table = (JTable) e.getSource();
+					if(e.isPopupTrigger()){
+						//http://www.stupidjavatricks.com/2005/11/jtable-right-click-row-selection/
+						Point p = e.getPoint();
+						int rowNumber = table.rowAtPoint(p);
+						ListSelectionModel model = table.getSelectionModel();
+						model.setSelectionInterval(rowNumber, rowNumber);
+						int row = table.getSelectedRow();
+						System.out.println("row " + row);
+						doContextMenu(e, row);
+					}
+				}
+				
+				public void mouseReleased(MouseEvent e){
+					JTable table = (JTable) e.getSource();
+					if(e.isPopupTrigger()){
+						//http://www.stupidjavatricks.com/2005/11/jtable-right-click-row-selection/
+						Point p = e.getPoint();
+						int rowNumber = table.rowAtPoint(p);
+						ListSelectionModel model = table.getSelectionModel();
+						model.setSelectionInterval(rowNumber, rowNumber);
+						int row = table.getSelectedRow();
+						System.out.println("row " + row);
+						doContextMenu(e, row);
+					}
+				}
+				
+				private void doContextMenu(MouseEvent e, int row){
+					ResolveContextMenu menu = new ResolveContextMenu(row);
+					menu.show(e.getComponent(), e.getX(), e.getY());
+				}
+			});
 		}
 		
 		if(e.getSource() == this.close){
 			this.dispose();
+		}
+	}
+	
+	class ResolveContextMenu extends JPopupMenu implements ActionListener{
+		private JMenuItem resolveNack;
+		private AccessController ac;
+		private int rowID;
+		
+		public ResolveContextMenu(int rowID){
+			this.rowID = rowID;
+			ac = AccessController.getInstance();
+			java.net.URL path = this.getClass().getResource("/uac_icon.png");
+			BufferedImage imgs = null;
+			BufferedImage scaledImage = null;
+			try{
+				imgs = ImageIO.read(path);
+				scaledImage = new BufferedImage(20, 20, BufferedImage.TYPE_INT_ARGB);
+				scaledImage.getGraphics().drawImage(imgs, 0, 0, 20, 20, null);
+			}catch(IOException e){
+			}
+			Icon uacIcon = new ImageIcon(scaledImage);
+			resolveNack = new JMenuItem("Resolve Nack", uacIcon);
+			resolveNack.setIcon(uacIcon);
+			resolveNack.addActionListener(this);
+			add(resolveNack);
+		}
+		
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			if(e.getSource() == this.resolveNack);{
+				int authVal = 0;
+				authVal = authenticate();
+				if(authVal == 1){
+					System.out.println("verify: " + rowID);
+					String filePath = ac.getAccessFilePath();
+					ac.writeResolvedNack(rowID, filePath);
+				}else if(authVal == -1){
+					JOptionPane.showMessageDialog(null, "Authentication failed: either unknown user or bad password.");
+				}
+			}
 		}
 	}
 

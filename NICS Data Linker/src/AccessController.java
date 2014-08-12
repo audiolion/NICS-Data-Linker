@@ -1,23 +1,15 @@
 import java.awt.Dimension;
 import java.awt.Toolkit;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
 
-import javax.security.auth.login.LoginException;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JPopupMenu;
-import javax.swing.JTable;
-import javax.swing.SwingUtilities;
+
+import net.miginfocom.swing.MigLayout;
 
 import com.healthmarketscience.jackcess.*;
 
@@ -42,6 +34,7 @@ public class AccessController {
 	private Table patientsTable;
 	private String filePath = null;
 	private String accessPath = null;
+	
 	
 	/**
 	 * Singleton Wrapper class 
@@ -147,21 +140,40 @@ public class AccessController {
 		}
 	}
 	
-	public void writeResolvedNack(int rowID){
+	public void writeResolvedNack(int rowID, String filePath){
+		AccessController ac = AccessController.getInstance();
+		ac.openDatabase(filePath);
 		try{
 			patientsTable = db.getTable("Patients");
 		}catch(IOException e){
 			JOptionPane.showMessageDialog(null, "Could not find or open table.");
 		}
-		IndexCursor cursor;
+		
+		ArrayList<String> list = new ArrayList<String>();
 		try{
-			cursor = CursorBuilder.createCursor(patientsTable.getIndex("Patient_ID"));
-			for(Row row : cursor.newEntryIterable(rowID)){
-				System.out.println(cursor.getCurrentRowValue(patientsTable.getColumn("Patient_ID")));
-			    //cursor.setCurrentRowValue(patientsTable.getColumn("Resolved"), new String("Yes"));
+			Cursor cur = CursorBuilder.createCursor(patientsTable);
+			while(cur.moveToNextRow()){
+				if(!String.valueOf(cur.getCurrentRowValue(patientsTable.getColumn("Acknowledged"))).contains("Yes")
+						&& !String.valueOf(cur.getCurrentRowValue(patientsTable.getColumn("Resolved"))).contains("Yes")){
+					list.add(cur.getCurrentRowValue(patientsTable.getColumn("Patient_Name")).toString() + "," +
+					cur.getCurrentRowValue(patientsTable.getColumn("Meditech_ID")).toString() + "," +
+					cur.getCurrentRowValue(patientsTable.getColumn("Admit_Update")).toString() + "," +
+					cur.getCurrentRowValue(patientsTable.getColumn("Date/Time")).toString());
+				}
 			}
 		}catch(IOException e){
-		}                        
+		}
+		System.out.println(list.size());
+		String[] data = list.get(rowID).split(",");
+		String meditechID = data[1];
+		try{
+			Cursor cursor = CursorBuilder.createCursor(patientsTable);
+			cursor.findFirstRow(patientsTable.getColumn("Meditech_ID"), meditechID);
+			cursor.setCurrentRowValue(patientsTable.getColumn("Resolved"), "Yes");
+			
+		}catch(IOException e){
+		}
+		ac.closeDatabase();
 	}
 	
 	/**
@@ -369,7 +381,7 @@ public class AccessController {
 		ac.closeDatabase();
 	}
 	
-	public void resolveNacks(){
+	public ArrayList<String> getUnresolvedNacks(){
 		JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to retrieve information from.");
 		FileChooser fc2;
 		if(accessPath != null){
@@ -379,7 +391,7 @@ public class AccessController {
 		}
 		String filePath = fc2.getFilePath();
 		if(filePath.equalsIgnoreCase("No File Selected")){
-			return;
+			return null;
 		}
 		AccessController ac = AccessController.getInstance();
 		ac.openDatabase(filePath);
@@ -388,48 +400,23 @@ public class AccessController {
 			patientsTable = db.getTable("Patients");
 			Cursor cur = CursorBuilder.createCursor(patientsTable);
 			while(cur.moveToNextRow()){
-				if(!cur.getCurrentRowValue(patientsTable.getColumn("Acknowledged")).toString().contains("Yes")
-						&& !cur.getCurrentRowValue(patientsTable.getColumn("Resolved")).toString().contains("Yes")){
+				if(!String.valueOf(cur.getCurrentRowValue(patientsTable.getColumn("Acknowledged"))).contains("Yes")
+						&& !String.valueOf(cur.getCurrentRowValue(patientsTable.getColumn("Resolved"))).contains("Yes")){
 					list.add(cur.getCurrentRowValue(patientsTable.getColumn("Patient_Name")).toString() + "," +
 					cur.getCurrentRowValue(patientsTable.getColumn("Meditech_ID")).toString() + "," +
 					cur.getCurrentRowValue(patientsTable.getColumn("Admit_Update")).toString() + "," +
 					cur.getCurrentRowValue(patientsTable.getColumn("Date/Time")).toString());
-					System.out.println("!");
 				}
 			}
-			ArrayListTableModel altm = new ArrayListTableModel(list);
-			altm.pack();
-			Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-			// Compute and set the location so the frame is centered
-			int x = screen.width/2-altm.getSize().width/2;
-			int y = screen.height/2-altm.getSize().height/2;
-			altm.setLocation(x, y);
-			altm.setTitle("Non-Acknowledged Patients");
-			altm.setVisible(true);
-			altm.addMouseListener(new MouseAdapter(){
-				boolean isClicked;
-				public void mouseClicked(MouseEvent mouseEvent){
-					JTable table = (JTable) mouseEvent.getSource();
-					int row = table.getSelectedRow();
-					if(isClicked){
-						writeResolvedNack(row);
-					}else{
-						isClicked = true;
-						Timer t = new Timer("doubleClickTimer", false);
-						t.schedule(new TimerTask(){
-							@Override
-							public void run(){
-								isClicked = false;
-							}
-						}, (Long) Toolkit.getDefaultToolkit().getDesktopProperty("awt.multiClickInterval"));
-					}
-				}
-			});
 		}catch(IOException e){
 			JOptionPane.showMessageDialog(null, "Could not read Patients Table.");
 		}
 		ac.closeDatabase();
+		return list;
 	}
 	
-
+	public String getAccessFilePath(){
+		return this.filePath;
+	}
 }
+

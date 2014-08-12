@@ -1,13 +1,10 @@
 import javax.imageio.ImageIO;
 import javax.naming.NamingException;
-import javax.security.auth.login.LoginException;
 import javax.swing.*;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -20,8 +17,6 @@ import java.util.*;
 
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.event.MenuKeyEvent;
-import javax.swing.event.MenuKeyListener;
 import javax.swing.table.*;
 
 import net.miginfocom.swing.MigLayout;
@@ -36,7 +31,7 @@ import net.miginfocom.swing.MigLayout;
 @SuppressWarnings("serial")
 public class ArrayListTableModel extends JFrame {
 	
-	private JTable table;
+	public JTable table;
 	private JTextField filterText;
 	private TableRowSorter<MyModel> sorter;
 	private final static String[] header = {"Patient Name", "Meditech ID", "Code", "Date/Time"};
@@ -49,27 +44,12 @@ public class ArrayListTableModel extends JFrame {
 	private final String USER_DEFAULT = "Username";
 	private final String PASS_DEFAULT = "Password";
 	
-	ArrayListTableModel(ArrayList<String> al) {
+	private final AccessController ac;
+	
+	public ArrayListTableModel(ArrayList<String> al) {
+		ac = AccessController.getInstance();
 		MyModel mm = new MyModel(al, header);
 		table = new JTable(mm);
-		table.addMouseListener(new MouseAdapter(){
-			public void mousePressed(MouseEvent e){
-				if(e.isPopupTrigger()){
-					doContextMenu(e);
-				}
-			}
-			
-			public void mouseReleased(MouseEvent e){
-				if(e.isPopupTrigger()){
-					doContextMenu(e);
-				}
-			}
-			
-			private void doContextMenu(MouseEvent e){
-				ResolveContextMenu menu = new ResolveContextMenu();
-				menu.show(e.getComponent(), e.getX(), e.getY());
-			}
-		});
 		sorter = new TableRowSorter<MyModel>(mm);
 		DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
 		centerRenderer.setHorizontalAlignment(JLabel.CENTER);
@@ -219,7 +199,6 @@ public class ArrayListTableModel extends JFrame {
 	
 	public boolean verifyPassword(String username, String password){
 		boolean authResult = false;
-		System.out.println(username + " " + password);
 		MemberOfAuth auth = new MemberOfAuth("FLH.LOCAL");
 		authResult = auth.isMemberOf("GGH Admins", username, password);
 		return authResult;
@@ -254,45 +233,6 @@ public class ArrayListTableModel extends JFrame {
 		
 		public boolean isCellEditable(int row, int col){
 			return false;
-		}
-	}
-
-	class ResolveContextMenu extends JPopupMenu implements ActionListener{
-		private JMenuItem resolveNack;
-		public ResolveContextMenu(){
-			java.net.URL path = this.getClass().getResource("/uac_icon.png");
-			BufferedImage imgs = null;
-			BufferedImage scaledImage = null;
-			try{
-				imgs = ImageIO.read(path);
-				scaledImage = new BufferedImage(20, 20, BufferedImage.TYPE_INT_ARGB);
-				scaledImage.getGraphics().drawImage(imgs, 0, 0, 20, 20, null);
-			}catch(IOException e){
-			}
-			Icon uacIcon = new ImageIcon(scaledImage);
-			resolveNack = new JMenuItem("Resolve Nack", uacIcon);
-			resolveNack.setIcon(uacIcon);
-			resolveNack.addActionListener(this);
-			add(resolveNack);
-		}
-		
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			if(e.getSource() == this.resolveNack);{
-				int authVal = 0;
-				try {
-					authVal = authenticate();
-				} catch (NamingException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-				System.out.println(authVal);
-				if(authVal == 1){
-					System.out.println("win");
-				}else if(authVal == -1){
-					JOptionPane.showMessageDialog(null, "Authentication failed: either unknown user or bad password.");
-				}
-			}
 		}
 	}
 }

@@ -1,15 +1,9 @@
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.Hashtable;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Vector;
 
 import javax.naming.AuthenticationException;
-import javax.naming.CompositeName;
 import javax.naming.Context;
-import javax.naming.Name;
-import javax.naming.NameParser;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 import javax.naming.directory.Attribute;
@@ -18,12 +12,7 @@ import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
-import javax.naming.ldap.InitialLdapContext;
-import javax.naming.ldap.LdapContext;
 import javax.naming.CommunicationException;
-import javax.security.auth.login.AccountException;
-import javax.security.auth.login.FailedLoginException;
-import javax.security.auth.login.LoginException;
 
 public class MemberOfAuth{
 
@@ -101,11 +90,10 @@ public class MemberOfAuth{
     	    searchFilter.append("(sAMAccountName="+user+")");
     	    searchFilter.append("(memberOf=CN=GGH Admins,OU=Admin Accounts,OU=Information Services,OU=GGH,DC=FLH,DC=LOCAL)"); // Add code to query memberOf 
     	    searchFilter.append(")");																						// from GGH Admin group so its not hard coded
-    	    								// also SSMH Admin and Domain Admin functionality
     	    SearchControls sCtrl = new SearchControls();
     	    sCtrl.setSearchScope(SearchControls.SUBTREE_SCOPE);
     	 
-    	    NamingEnumeration answer = ctx.search(searchBase, searchFilter.toString(), sCtrl);
+    	    NamingEnumeration<SearchResult> answer = ctx.search(searchBase, searchFilter.toString(), sCtrl);
     	    boolean passes = false;
     	 
     	    if (answer.hasMoreElements()) {
