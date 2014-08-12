@@ -121,8 +121,10 @@ public class GUI extends JFrame implements ActionListener{
 	private void setProps(String defaultFilePath, String defaultAccessPath){
 		try{
 			Properties props = new Properties();
-			props.setProperty("defaultFilePath", defaultFilePath);
-			props.setProperty("defaultAccessPath", defaultAccessPath);
+			if(!defaultFilePath.equals(""))
+				props.setProperty("defaultFilePath", defaultFilePath);
+			if(!defaultAccessPath.equals(""))
+				props.setProperty("defaultAccessPath", defaultAccessPath);
 			File f = new File(PROPS);
 			OutputStream out = new FileOutputStream(f);
 			props.store(out, "");
