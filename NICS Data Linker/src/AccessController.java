@@ -1,5 +1,3 @@
-import java.awt.Dimension;
-import java.awt.Toolkit;
 import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
@@ -9,10 +7,7 @@ import java.util.Date;
 
 import javax.swing.JOptionPane;
 
-import net.miginfocom.swing.MigLayout;
-
 import com.healthmarketscience.jackcess.*;
-
 
 /**
  * This class is a controller as part of the Model-View-Controller
@@ -32,8 +27,7 @@ public class AccessController {
 	
 	private Database db;
 	private Table patientsTable;
-	private String filePath = null;
-	private String accessPath = null;
+	private String accessPath;
 	
 	
 	/**
@@ -81,30 +75,24 @@ public class AccessController {
 		}
 	}
 	
-	public void setFilePath(){
-		JOptionPane.showMessageDialog(null, "Please select the default file path to open to.");
+	public String setFilePath(){
 		FileChooser fc = new FileChooser();
 		File file = fc.getDirectoryPath();
 		String filePath = file.getAbsolutePath();
 		if(filePath.equalsIgnoreCase("No File Selected")){
-			return;
+			return "";
 		}
-		else{
-			this.filePath = filePath;
-		}
+		return filePath;
 	}
 	
-	public void setAccessPath(){
-		JOptionPane.showMessageDialog(null, "Please select the default file path to open to.");
+	public String setAccessPath(){
 		FileChooser fc = new FileChooser();
 		File file = fc.getDirectoryPath();
 		String filePath = file.getAbsolutePath();
 		if(filePath.equalsIgnoreCase("No File Selected")){
-			return;
+			return "";
 		}
-		else{
-			this.accessPath = filePath;
-		}
+		return filePath;
 	}
 	
 	public boolean verifyPassword(String username, String password){
@@ -163,14 +151,15 @@ public class AccessController {
 			}
 		}catch(IOException e){
 		}
-		System.out.println(list.size());
 		String[] data = list.get(rowID).split(",");
 		String meditechID = data[1];
 		try{
 			Cursor cursor = CursorBuilder.createCursor(patientsTable);
-			cursor.findFirstRow(patientsTable.getColumn("Meditech_ID"), meditechID);
-			cursor.setCurrentRowValue(patientsTable.getColumn("Resolved"), "Yes");
-			
+			while(cursor.moveToNextRow()){
+				if(String.valueOf(cursor.getCurrentRowValue(patientsTable.getColumn("Meditech_ID"))).contains(meditechID)){
+					cursor.setCurrentRowValue(patientsTable.getColumn("Resolved"), "Yes");
+				}
+			}
 		}catch(IOException e){
 		}
 		ac.closeDatabase();
@@ -191,7 +180,7 @@ public class AccessController {
 			Cursor cur = CursorBuilder.createCursor(patientsTable);
 			while(cur.moveToNextRow()){
 				for(int i = 0; i < ackData.size(); i++){
-					if(cur.getCurrentRowValue(patientsTable.getColumn("Meditech_ID")).toString().contains(ackData.get(i))){
+					if(String.valueOf(cur.getCurrentRowValue(patientsTable.getColumn("Meditech_ID"))).contains(ackData.get(i))){
 						cur.setCurrentRowValue(patientsTable.getColumn("Acknowledged"), "Yes");
 					}
 				}
@@ -204,15 +193,15 @@ public class AccessController {
 	/**
 	 * Method handles the logic for gathering NICS data and writing it to a MS access
 	 * database.
+	 * @param defaultFilePath 
 	 * 
 	 * @throws IOException
 	 */
-	public void processNics() throws IOException{
-		JOptionPane.showMessageDialog(null, "Please select the NICS files you would like to process.\nYou can select multiple files by holding down the 'CTRL' key while you select.");
+	public void processNics(String defaultFilePath, String defaultAccessPath) throws IOException{
 		FileReader fr = new FileReader();
 		FileChooser fc;
-		if(filePath != null){
-			fc = new FileChooser(filePath);
+		if(!defaultFilePath.equals("")){
+			fc = new FileChooser(defaultFilePath);
 		}else{
 			fc = new FileChooser();
 		}
@@ -220,7 +209,7 @@ public class AccessController {
 		if(filePaths[0].equalsIgnoreCase("No Selection")){
 			return;
 		}
-		filePath = fc.getDirPath();		
+		String filePath = fc.getDirPath();		
 		ArrayList<String> data = fr.readFile(filePaths);
 		ArrayList<String> nics = fr.getNicsData(data);
 		if(nics.size() == 0){
@@ -228,17 +217,15 @@ public class AccessController {
 			return;
 		}
 		JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to write information to.");
-		FileChooser fc2;
-		if(accessPath != null){
-			fc2 = new FileChooser(accessPath);
+		if(!defaultAccessPath.equals("")){
+			fc = new FileChooser(defaultAccessPath);
 		}else{
-			fc2 = new FileChooser();
+			fc = new FileChooser();
 		}
-		String filePath = fc2.getFilePath();
+		filePath = fc.getFilePath();
 		if(filePath.equalsIgnoreCase("No File Selected")){
 			return;
 		}
-		accessPath = filePath;
 		AccessController ac = AccessController.getInstance();
 		ac.openDatabase(filePath);
 		ac.writeData(nics);
@@ -249,15 +236,15 @@ public class AccessController {
 	/**
 	 * Method handles logic for gathering Ack data and cross-checking it against
 	 * a MS Access database.
+	 * @param defaultFilePath 
 	 * 
 	 * @throws IOException
 	 */
-	public void processAcks() throws IOException{
-		JOptionPane.showMessageDialog(null, "Please select the ACK files you would like to process.\nYou can select multiple files by holding down the 'CTRL' key while you select.");
+	public void processAcks(String defaultFilePath, String defaultAccessPath) throws IOException{
 		FileReader fr = new FileReader();
 		FileChooser fc;
-		if(filePath != null){
-			fc = new FileChooser(filePath);
+		if(!defaultFilePath.equals("")){
+			fc = new FileChooser(defaultFilePath);
 		}else{
 			fc = new FileChooser();
 		}
@@ -265,7 +252,7 @@ public class AccessController {
 		if(filePaths[0].equalsIgnoreCase("No Selection")){
 			return;
 		}
-		filePath = fc.getDirPath();
+		String filePath = fc.getDirPath();
 		ArrayList<String> data = fr.readFile(filePaths);
 		ArrayList<String> acks = fr.getAckData(data);
 		if(acks.size() == 0){
@@ -273,13 +260,12 @@ public class AccessController {
 			return;
 		}
 		JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to write information to.");
-		FileChooser fc2;
-		if(accessPath != null){
-			fc2 = new FileChooser(accessPath);
+		if(!defaultAccessPath.equals("")){
+			fc = new FileChooser(defaultAccessPath);
 		}else{
-			fc2 = new FileChooser();
+			fc = new FileChooser();
 		}
-		String filePath = fc2.getFilePath();
+		filePath = fc.getFilePath();
 		if(filePath.equalsIgnoreCase("No File Selected")){
 			return;
 		}
@@ -293,18 +279,19 @@ public class AccessController {
 	/**
 	 * Method handles logic for printing out a neat table of acknowledged patients
 	 * with the name, meditech ID and update/submit code status.
+	 * @param defaultAccessPath 
+	 * @return 
 	 */
-	public void printAcknowledgements(){
-		JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to retrieve information from.");
-		FileChooser fc2;
-		if(accessPath != null){
-			fc2 = new FileChooser(accessPath);
+	public ArrayList<String> printAcknowledgements(String defaultAccessPath){
+		FileChooser fc;
+		if(!defaultAccessPath.equals("")){
+			fc = new FileChooser(defaultAccessPath);
 		}else{
-			fc2 = new FileChooser();
+			fc = new FileChooser();
 		}
-		String filePath = fc2.getFilePath();
+		String filePath = fc.getFilePath();
 		if(filePath.equalsIgnoreCase("No File Selected")){
-			return;
+			return null;
 		}
 		AccessController ac = AccessController.getInstance();
 		ac.openDatabase(filePath);
@@ -320,36 +307,29 @@ public class AccessController {
 				cur.getCurrentRowValue(patientsTable.getColumn("Date/Time")).toString());
 				}
 			}
-			ArrayListTableModel altm = new ArrayListTableModel(list);
-			altm.pack();
-			Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-			// Compute and set the location so the frame is centered
-			int x = screen.width/2-altm.getSize().width/2;
-			int y = screen.height/2-altm.getSize().height/2;
-			altm.setLocation(x, y);
-			altm.setTitle("Acknowledged Patients");
-			altm.setVisible(true);
 		}catch(IOException e){
 			JOptionPane.showMessageDialog(null, "Could not read Patients Table.");
 		}
 		ac.closeDatabase();
+		return list;
 	}
 	
 	/**
 	 * Method handles logic for printing out a neat table of non-acknowledged patients
 	 * with their name, meditech ID and Update/Submit code status.
+	 * @param defaultAccessPath 
+	 * @return 
 	 */
-	public void printNacknowledgements(){
-		JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to retrieve information from.");
-		FileChooser fc2;
-		if(accessPath != null){
-			fc2 = new FileChooser(accessPath);
+	public ArrayList<String> printNacknowledgements(String defaultAccessPath){
+		FileChooser fc;
+		if(!defaultAccessPath.equals("")){
+			fc = new FileChooser(defaultAccessPath);
 		}else{
-			fc2 = new FileChooser();
+			fc = new FileChooser();
 		}
-		String filePath = fc2.getFilePath();
+		String filePath = fc.getFilePath();
 		if(filePath.equalsIgnoreCase("No File Selected")){
-			return;
+			return null;
 		}
 		AccessController ac = AccessController.getInstance();
 		ac.openDatabase(filePath);
@@ -366,35 +346,26 @@ public class AccessController {
 					cur.getCurrentRowValue(patientsTable.getColumn("Date/Time")).toString());
 				}				
 			}
-			ArrayListTableModel altm = new ArrayListTableModel(list);
-			altm.pack();
-			Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-			// Compute and set the location so the frame is centered
-			int x = screen.width/2-altm.getSize().width/2;
-			int y = screen.height/2-altm.getSize().height/2;
-			altm.setLocation(x, y);
-			altm.setTitle("Non-Acknowledged Patients");
-			altm.setVisible(true);
 		}catch(IOException e){
 			JOptionPane.showMessageDialog(null, "Could not read Patients Table.");
 		}
 		ac.closeDatabase();
+		return list;
 	}
 	
-	public ArrayList<String> getUnresolvedNacks(){
-		JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to retrieve information from.");
-		FileChooser fc2;
-		if(accessPath != null){
-			fc2 = new FileChooser(accessPath);
+	public ArrayList<String> getUnresolvedNacks(String defaultAccessPath){
+		FileChooser fc;
+		if(!defaultAccessPath.equals("")){
+			fc = new FileChooser(defaultAccessPath);
 		}else{
-			fc2 = new FileChooser();
+			fc = new FileChooser();
 		}
-		String filePath = fc2.getFilePath();
-		if(filePath.equalsIgnoreCase("No File Selected")){
+		accessPath = fc.getFilePath();
+		if(accessPath.equalsIgnoreCase("No File Selected")){
 			return null;
 		}
 		AccessController ac = AccessController.getInstance();
-		ac.openDatabase(filePath);
+		ac.openDatabase(accessPath);
 		ArrayList<String> list = new ArrayList<String>();
 		try{
 			patientsTable = db.getTable("Patients");
@@ -415,8 +386,31 @@ public class AccessController {
 		return list;
 	}
 	
-	public String getAccessFilePath(){
-		return this.filePath;
+	public ArrayList<String> getRefreshedNacks(String accessPath){
+		AccessController ac = AccessController.getInstance();
+		ac.openDatabase(accessPath);
+		ArrayList<String> list = new ArrayList<String>();
+		try{
+			patientsTable = db.getTable("Patients");
+			Cursor cur = CursorBuilder.createCursor(patientsTable);
+			while(cur.moveToNextRow()){
+				if(!String.valueOf(cur.getCurrentRowValue(patientsTable.getColumn("Acknowledged"))).contains("Yes")
+						&& !String.valueOf(cur.getCurrentRowValue(patientsTable.getColumn("Resolved"))).contains("Yes")){
+					list.add(cur.getCurrentRowValue(patientsTable.getColumn("Patient_Name")).toString() + "," +
+					cur.getCurrentRowValue(patientsTable.getColumn("Meditech_ID")).toString() + "," +
+					cur.getCurrentRowValue(patientsTable.getColumn("Admit_Update")).toString() + "," +
+					cur.getCurrentRowValue(patientsTable.getColumn("Date/Time")).toString());
+				}
+			}
+		}catch(IOException e){
+			JOptionPane.showMessageDialog(null, "Could not read Patients Table.");
+		}
+		ac.closeDatabase();
+		return list;
+	}
+	
+	public String getAccessPath(){
+		return this.accessPath;
 	}
 }
 

@@ -1,18 +1,10 @@
-import javax.imageio.ImageIO;
-import javax.naming.NamingException;
 import javax.swing.*;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
 import java.util.*;
 
 import javax.swing.event.DocumentEvent;
@@ -44,10 +36,7 @@ public class ArrayListTableModel extends JFrame {
 	private final String USER_DEFAULT = "Username";
 	private final String PASS_DEFAULT = "Password";
 	
-	private final AccessController ac;
-	
 	public ArrayListTableModel(ArrayList<String> al) {
-		ac = AccessController.getInstance();
 		MyModel mm = new MyModel(al, header);
 		table = new JTable(mm);
 		sorter = new TableRowSorter<MyModel>(mm);
@@ -173,28 +162,6 @@ public class ArrayListTableModel extends JFrame {
 			}
 			sorter.setRowFilter(rf);
 		}
-	}
-	
-	private int authenticate() throws NamingException{
-		java.net.URL path = this.getClass().getResource("/uac_icon.png");
-		BufferedImage imgs = null;
-		try{
-			imgs = ImageIO.read(path);
-		}catch(IOException e){
-		}
-		Icon uacIcon = new ImageIcon(imgs);
-		usernameField.setForeground(Color.GRAY);
-		passwordField.setForeground(Color.GRAY);
-		usernameField.setText(USER_DEFAULT);
-		passwordField.setText(PASS_DEFAULT);
-		passwordField.setEchoChar((char)0);
-		int inputVal = JOptionPane.showConfirmDialog(null, loginPanel, "User Account Controls", JOptionPane.OK_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, uacIcon);
-		if(inputVal == JOptionPane.CANCEL_OPTION || inputVal == JOptionPane.CLOSED_OPTION)
-			return 0;	// cancelled
-		else if(this.verifyPassword(usernameField.getText(), new String(passwordField.getPassword())))
-			return 1; // verified
-		else
-			return -1; // not verified
 	}
 	
 	public boolean verifyPassword(String username, String password){

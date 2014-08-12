@@ -9,9 +9,15 @@ import java.awt.event.FocusListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Properties;
 
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
@@ -50,6 +56,7 @@ public class GUI extends JFrame implements ActionListener{
 
 	private final String USER_DEFAULT = "Username";
 	private final String PASS_DEFAULT = "Password";
+	private final String PROPS = "props";
 	
 	private final AccessController ac;
 	
@@ -70,6 +77,10 @@ public class GUI extends JFrame implements ActionListener{
 	private JPasswordField passwordField;
 	private JPanel loginPanel;
 	
+	private String defaultFilePath;
+	private String defaultAccessPath;
+	
+	
 	/**
 	 * Constructor for GUI window
 	 * @param title - the title of the window
@@ -79,6 +90,45 @@ public class GUI extends JFrame implements ActionListener{
 		this.ac = AccessController.getInstance();
 		initComponents();
 		fillComponents();
+		getProps();
+	}
+	
+	
+	private void getProps(){
+		Properties props = new Properties();
+		InputStream is = null;
+		
+		try{
+			File f = new File(PROPS);
+			is = new FileInputStream(f);
+		}catch(Exception e){
+			is = null;
+		}
+		
+		try{
+			if(is == null){
+				is = this.getClass().getResourceAsStream("props");
+			}
+			
+			props.load(is);
+		}catch(Exception e){
+		}
+		
+		defaultFilePath = props.getProperty("defaultFilePath", "");
+		defaultAccessPath = props.getProperty("defaultAccessPath", "");
+	}
+	
+	private void setProps(String defaultFilePath, String defaultAccessPath){
+		try{
+			Properties props = new Properties();
+			props.setProperty("defaultFilePath", defaultFilePath);
+			props.setProperty("defaultAccessPath", defaultAccessPath);
+			File f = new File(PROPS);
+			OutputStream out = new FileOutputStream(f);
+			props.store(out, "");
+		}catch(Exception e){
+			e.printStackTrace();
+		}
 	}
 	
 	/**
@@ -240,53 +290,38 @@ public class GUI extends JFrame implements ActionListener{
 	 */
 	public void actionPerformed(ActionEvent e){
 		if(e.getSource() == this.processNics){
+			JOptionPane.showMessageDialog(null, "Please select the NICS files you would like to process.\nYou can select multiple files by holding down the 'CTRL' key while you select.");
 			try {
-				ac.processNics();
+				ac.processNics(defaultFilePath, defaultAccessPath);
 			} catch (IOException e1) {
 			}
 		}
 		
 		if(e.getSource() == this.processAcks){
+			JOptionPane.showMessageDialog(null, "Please select the ACK files you would like to process.\nYou can select multiple files by holding down the 'CTRL' key while you select.");
 			try {
-				ac.processAcks();
+				ac.processAcks(defaultFilePath, defaultAccessPath);
 			} catch (IOException e1) {
 			}
 		}
 		
 		if(e.getSource() == this.printAcks){
-			ac.printAcknowledgements();
+			JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to retrieve information from.");
+			ArrayList<String> list = ac.printAcknowledgements(defaultAccessPath);
+			ArrayListTableModel altm = new ArrayListTableModel(list);
+			altm.pack();
+			Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+			// Compute and set the location so the frame is centered
+			int x = screen.width/2-altm.getSize().width/2;
+			int y = screen.height/2-altm.getSize().height/2;
+			altm.setLocation(x, y);
+			altm.setTitle("Acknowledged Patients");
+			altm.setVisible(true);
 		}
 		
 		if(e.getSource() == this.printNacks){
-			ac.printNacknowledgements();
-		}
-		
-		if(e.getSource() == this.about){
-			JOptionPane.showMessageDialog(null, "Author: Ryan Robert Castner\nYear: 2013\nDesigned for use by Finger Lakes Health.\nContact: ryancastner@msn.com");
-		}
-		
-		if(e.getSource() == this.help){
-			JOptionPane.showMessageDialog(null, "For help or more information about using this application\nplease contact Kelly Spano at kelly.spano@flhealth.org");
-		}
-		
-		if(e.getSource() == this.setPath){
-			int authenticationVal = authenticate();
-			if(authenticationVal == 1)
-				ac.setFilePath();
-			else if(authenticationVal == -1)
-				JOptionPane.showMessageDialog(null, "Authentication failed: either unknown user or bad password.");
-		}
-		
-		if(e.getSource() == this.setAccessPath){
-			int authenticationVal = authenticate();
-			if(authenticationVal == 1)
-				ac.setAccessPath();
-			else if(authenticationVal == -1)
-				JOptionPane.showMessageDialog(null, "Authentication failed: either unknown user or bad password.");
-		}
-		
-		if(e.getSource() == this.resolveNacks){
-			ArrayList<String> list = ac.getUnresolvedNacks();
+			JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to retrieve information from.");
+			ArrayList<String> list = ac.printNacknowledgements(defaultAccessPath);
 			ArrayListTableModel altm = new ArrayListTableModel(list);
 			altm.pack();
 			Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
@@ -296,40 +331,47 @@ public class GUI extends JFrame implements ActionListener{
 			altm.setLocation(x, y);
 			altm.setTitle("Non-Acknowledged Patients");
 			altm.setVisible(true);
-			altm.table.addMouseListener(new MouseAdapter(){
-				public void mousePressed(MouseEvent e){
-					JTable table = (JTable) e.getSource();
-					if(e.isPopupTrigger()){
-						//http://www.stupidjavatricks.com/2005/11/jtable-right-click-row-selection/
-						Point p = e.getPoint();
-						int rowNumber = table.rowAtPoint(p);
-						ListSelectionModel model = table.getSelectionModel();
-						model.setSelectionInterval(rowNumber, rowNumber);
-						int row = table.getSelectedRow();
-						System.out.println("row " + row);
-						doContextMenu(e, row);
-					}
+		}
+		
+		if(e.getSource() == this.about){
+			JOptionPane.showMessageDialog(null, "Author: Ryan Robert Castner\nYear: 2014\nDesigned for use by Finger Lakes Health.\nContact: castner.rr@gmail.com");
+		}
+		
+		if(e.getSource() == this.help){
+			JOptionPane.showMessageDialog(null, "For help or more information about using this application\nplease contact Kelly Spano at kelly.spano@flhealth.org");
+		}
+		
+		if(e.getSource() == this.setPath){
+			int authenticationVal = authenticate();
+			if(authenticationVal == 1){
+				JOptionPane.showMessageDialog(null, "Please select the default file path to open to.");
+				String path = ac.setFilePath();
+				if(!path.equals("")){
+					this.setProps(path, "");
+					defaultFilePath = path;
 				}
-				
-				public void mouseReleased(MouseEvent e){
-					JTable table = (JTable) e.getSource();
-					if(e.isPopupTrigger()){
-						//http://www.stupidjavatricks.com/2005/11/jtable-right-click-row-selection/
-						Point p = e.getPoint();
-						int rowNumber = table.rowAtPoint(p);
-						ListSelectionModel model = table.getSelectionModel();
-						model.setSelectionInterval(rowNumber, rowNumber);
-						int row = table.getSelectedRow();
-						System.out.println("row " + row);
-						doContextMenu(e, row);
-					}
+			}
+			else if(authenticationVal == -1)
+				JOptionPane.showMessageDialog(null, "Authentication failed: either unknown user or bad password.");
+		}
+		
+		if(e.getSource() == this.setAccessPath){
+			int authenticationVal = authenticate();
+			if(authenticationVal == 1){
+				JOptionPane.showMessageDialog(null, "Please select the default file path to open to.");
+				String path = ac.setAccessPath();
+				if(!path.equals("")){
+					this.setProps("", path);
+					defaultAccessPath = path;
 				}
-				
-				private void doContextMenu(MouseEvent e, int row){
-					ResolveContextMenu menu = new ResolveContextMenu(row);
-					menu.show(e.getComponent(), e.getX(), e.getY());
-				}
-			});
+			}
+			else if(authenticationVal == -1)
+				JOptionPane.showMessageDialog(null, "Authentication failed: either unknown user or bad password.");
+		}
+		
+		if(e.getSource() == this.resolveNacks){
+			JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to retrieve information from.");
+			showResolveWindow();
 		}
 		
 		if(e.getSource() == this.close){
@@ -337,12 +379,107 @@ public class GUI extends JFrame implements ActionListener{
 		}
 	}
 	
+	private void showResolveWindow(String accessPath) {
+		
+		ArrayList<String> list = ac.getRefreshedNacks(accessPath);
+		final ArrayListTableModel altm = new ArrayListTableModel(list);
+		altm.pack();
+		Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+		// Compute and set the location so the frame is centered
+		int x = screen.width/2-altm.getSize().width/2;
+		int y = screen.height/2-altm.getSize().height/2;
+		altm.setLocation(x, y);
+		altm.setTitle("Non-Acknowledged Patients");
+		altm.setVisible(true);
+		altm.table.addMouseListener(new MouseAdapter(){
+			public void mousePressed(MouseEvent e){
+				JTable table = (JTable) e.getSource();
+				if(e.isPopupTrigger()){
+					//http://www.stupidjavatricks.com/2005/11/jtable-right-click-row-selection/
+					Point p = e.getPoint();
+					int rowNumber = table.rowAtPoint(p);
+					ListSelectionModel model = table.getSelectionModel();
+					model.setSelectionInterval(rowNumber, rowNumber);
+					int row = table.getSelectedRow();
+					doContextMenu(e, row);
+				}
+			}
+			
+			public void mouseReleased(MouseEvent e){
+				JTable table = (JTable) e.getSource();
+				if(e.isPopupTrigger()){
+					//http://www.stupidjavatricks.com/2005/11/jtable-right-click-row-selection/
+					Point p = e.getPoint();
+					int rowNumber = table.rowAtPoint(p);
+					ListSelectionModel model = table.getSelectionModel();
+					model.setSelectionInterval(rowNumber, rowNumber);
+					int row = table.getSelectedRow();
+					doContextMenu(e, row);
+				}
+			}
+			
+			private void doContextMenu(MouseEvent e, int row){
+				ResolveContextMenu menu = new ResolveContextMenu(row, altm);
+				menu.show(e.getComponent(), e.getX(), e.getY());
+			}
+		});
+		
+	}
+	
+	private void showResolveWindow() {
+		ArrayList<String> list = ac.getUnresolvedNacks(defaultAccessPath);
+		final ArrayListTableModel altm = new ArrayListTableModel(list);
+		altm.pack();
+		Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+		// Compute and set the location so the frame is centered
+		int x = screen.width/2-altm.getSize().width/2;
+		int y = screen.height/2-altm.getSize().height/2;
+		altm.setLocation(x, y);
+		altm.setTitle("Non-Acknowledged Patients");
+		altm.setVisible(true);
+		altm.table.addMouseListener(new MouseAdapter(){
+			public void mousePressed(MouseEvent e){
+				JTable table = (JTable) e.getSource();
+				if(e.isPopupTrigger()){
+					//http://www.stupidjavatricks.com/2005/11/jtable-right-click-row-selection/
+					Point p = e.getPoint();
+					int rowNumber = table.rowAtPoint(p);
+					ListSelectionModel model = table.getSelectionModel();
+					model.setSelectionInterval(rowNumber, rowNumber);
+					int row = table.getSelectedRow();
+					doContextMenu(e, row);
+				}
+			}
+			
+			public void mouseReleased(MouseEvent e){
+				JTable table = (JTable) e.getSource();
+				if(e.isPopupTrigger()){
+					//http://www.stupidjavatricks.com/2005/11/jtable-right-click-row-selection/
+					Point p = e.getPoint();
+					int rowNumber = table.rowAtPoint(p);
+					ListSelectionModel model = table.getSelectionModel();
+					model.setSelectionInterval(rowNumber, rowNumber);
+					int row = table.getSelectedRow();
+					doContextMenu(e, row);
+				}
+			}
+			
+			private void doContextMenu(MouseEvent e, int row){
+				ResolveContextMenu menu = new ResolveContextMenu(row, altm);
+				menu.show(e.getComponent(), e.getX(), e.getY());
+			}
+		});
+		
+	}
+
 	class ResolveContextMenu extends JPopupMenu implements ActionListener{
 		private JMenuItem resolveNack;
 		private AccessController ac;
 		private int rowID;
+		private ArrayListTableModel altm;
 		
-		public ResolveContextMenu(int rowID){
+		public ResolveContextMenu(int rowID, ArrayListTableModel altm){
+			this.altm = altm;
 			this.rowID = rowID;
 			ac = AccessController.getInstance();
 			java.net.URL path = this.getClass().getResource("/uac_icon.png");
@@ -367,9 +504,10 @@ public class GUI extends JFrame implements ActionListener{
 				int authVal = 0;
 				authVal = authenticate();
 				if(authVal == 1){
-					System.out.println("verify: " + rowID);
-					String filePath = ac.getAccessFilePath();
+					String filePath = ac.getAccessPath();
 					ac.writeResolvedNack(rowID, filePath);
+					altm.dispose();
+					showResolveWindow(filePath);
 				}else if(authVal == -1){
 					JOptionPane.showMessageDialog(null, "Authentication failed: either unknown user or bad password.");
 				}
