@@ -283,6 +283,7 @@ public class AccessController {
 	 * @return 
 	 */
 	public ArrayList<String> printAcknowledgements(String defaultAccessPath){
+		ArrayList<String> list = new ArrayList<String>();
 		FileChooser fc;
 		if(!defaultAccessPath.equals("")){
 			fc = new FileChooser(defaultAccessPath);
@@ -291,11 +292,10 @@ public class AccessController {
 		}
 		String filePath = fc.getFilePath();
 		if(filePath.equalsIgnoreCase("No File Selected")){
-			return null;
+			return list;
 		}
 		AccessController ac = AccessController.getInstance();
 		ac.openDatabase(filePath);
-		ArrayList<String> list = new ArrayList<String>();
 		try{
 			patientsTable = db.getTable("Patients");
 			Cursor cur = CursorBuilder.createCursor(patientsTable);
@@ -321,6 +321,7 @@ public class AccessController {
 	 * @return 
 	 */
 	public ArrayList<String> printNacknowledgements(String defaultAccessPath){
+		ArrayList<String> list = new ArrayList<String>();
 		FileChooser fc;
 		if(!defaultAccessPath.equals("")){
 			fc = new FileChooser(defaultAccessPath);
@@ -329,11 +330,10 @@ public class AccessController {
 		}
 		String filePath = fc.getFilePath();
 		if(filePath.equalsIgnoreCase("No File Selected")){
-			return null;
+			return list;
 		}
 		AccessController ac = AccessController.getInstance();
 		ac.openDatabase(filePath);
-		ArrayList<String> list = new ArrayList<String>();
 		try{
 			patientsTable = db.getTable("Patients");
 			Cursor cur = CursorBuilder.createCursor(patientsTable);
@@ -354,6 +354,7 @@ public class AccessController {
 	}
 	
 	public ArrayList<String> getUnresolvedNacks(String defaultAccessPath){
+		ArrayList<String> list = new ArrayList<String>();
 		FileChooser fc;
 		if(!defaultAccessPath.equals("")){
 			fc = new FileChooser(defaultAccessPath);
@@ -362,11 +363,10 @@ public class AccessController {
 		}
 		accessPath = fc.getFilePath();
 		if(accessPath.equalsIgnoreCase("No File Selected")){
-			return null;
+			return list;
 		}
 		AccessController ac = AccessController.getInstance();
 		ac.openDatabase(accessPath);
-		ArrayList<String> list = new ArrayList<String>();
 		try{
 			patientsTable = db.getTable("Patients");
 			Cursor cur = CursorBuilder.createCursor(patientsTable);

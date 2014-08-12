@@ -18,6 +18,7 @@ import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.prefs.Preferences;
 
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
@@ -56,7 +57,7 @@ public class GUI extends JFrame implements ActionListener{
 
 	private final String USER_DEFAULT = "Username";
 	private final String PASS_DEFAULT = "Password";
-	private final String PROPS = "props";
+	private final String PROPS = ".props";
 	
 	private final AccessController ac;
 	
@@ -79,7 +80,6 @@ public class GUI extends JFrame implements ActionListener{
 	
 	private String defaultFilePath;
 	private String defaultAccessPath;
-	
 	
 	/**
 	 * Constructor for GUI window
@@ -107,7 +107,7 @@ public class GUI extends JFrame implements ActionListener{
 		
 		try{
 			if(is == null){
-				is = this.getClass().getResourceAsStream("props");
+				is = this.getClass().getResourceAsStream("/resources/props");
 			}
 			
 			props.load(is);
@@ -123,11 +123,17 @@ public class GUI extends JFrame implements ActionListener{
 			Properties props = new Properties();
 			if(!defaultFilePath.equals(""))
 				props.setProperty("defaultFilePath", defaultFilePath);
+			else
+				props.setProperty("defaultFilePath", this.defaultFilePath);
 			if(!defaultAccessPath.equals(""))
 				props.setProperty("defaultAccessPath", defaultAccessPath);
+			else
+				props.setProperty("defaultAccessPath", this.defaultAccessPath);
 			File f = new File(PROPS);
+			f.setWritable(true);
 			OutputStream out = new FileOutputStream(f);
 			props.store(out, "");
+			f.setWritable(false);
 		}catch(Exception e){
 			e.printStackTrace();
 		}
@@ -310,29 +316,33 @@ public class GUI extends JFrame implements ActionListener{
 		if(e.getSource() == this.printAcks){
 			JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to retrieve information from.");
 			ArrayList<String> list = ac.printAcknowledgements(defaultAccessPath);
-			ArrayListTableModel altm = new ArrayListTableModel(list);
-			altm.pack();
-			Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-			// Compute and set the location so the frame is centered
-			int x = screen.width/2-altm.getSize().width/2;
-			int y = screen.height/2-altm.getSize().height/2;
-			altm.setLocation(x, y);
-			altm.setTitle("Acknowledged Patients");
-			altm.setVisible(true);
+			if(list.size() > 0){
+				ArrayListTableModel altm = new ArrayListTableModel(list);
+				altm.pack();
+				Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+				// Compute and set the location so the frame is centered
+				int x = screen.width/2-altm.getSize().width/2;
+				int y = screen.height/2-altm.getSize().height/2;
+				altm.setLocation(x, y);
+				altm.setTitle("Acknowledged Patients");
+				altm.setVisible(true);
+			}
 		}
 		
 		if(e.getSource() == this.printNacks){
 			JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to retrieve information from.");
 			ArrayList<String> list = ac.printNacknowledgements(defaultAccessPath);
-			ArrayListTableModel altm = new ArrayListTableModel(list);
-			altm.pack();
-			Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-			// Compute and set the location so the frame is centered
-			int x = screen.width/2-altm.getSize().width/2;
-			int y = screen.height/2-altm.getSize().height/2;
-			altm.setLocation(x, y);
-			altm.setTitle("Non-Acknowledged Patients");
-			altm.setVisible(true);
+			if(list.size() > 0){
+				ArrayListTableModel altm = new ArrayListTableModel(list);
+				altm.pack();
+				Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+				// Compute and set the location so the frame is centered
+				int x = screen.width/2-altm.getSize().width/2;
+				int y = screen.height/2-altm.getSize().height/2;
+				altm.setLocation(x, y);
+				altm.setTitle("Non-Acknowledged Patients");
+				altm.setVisible(true);
+			}
 		}
 		
 		if(e.getSource() == this.about){
@@ -382,50 +392,50 @@ public class GUI extends JFrame implements ActionListener{
 	}
 	
 	private void showResolveWindow(String accessPath) {
-		
 		ArrayList<String> list = ac.getRefreshedNacks(accessPath);
-		final ArrayListTableModel altm = new ArrayListTableModel(list);
-		altm.pack();
-		Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
-		// Compute and set the location so the frame is centered
-		int x = screen.width/2-altm.getSize().width/2;
-		int y = screen.height/2-altm.getSize().height/2;
-		altm.setLocation(x, y);
-		altm.setTitle("Non-Acknowledged Patients");
-		altm.setVisible(true);
-		altm.table.addMouseListener(new MouseAdapter(){
-			public void mousePressed(MouseEvent e){
-				JTable table = (JTable) e.getSource();
-				if(e.isPopupTrigger()){
-					//http://www.stupidjavatricks.com/2005/11/jtable-right-click-row-selection/
-					Point p = e.getPoint();
-					int rowNumber = table.rowAtPoint(p);
-					ListSelectionModel model = table.getSelectionModel();
-					model.setSelectionInterval(rowNumber, rowNumber);
-					int row = table.getSelectedRow();
-					doContextMenu(e, row);
+		if(list.size() > 0){
+			final ArrayListTableModel altm = new ArrayListTableModel(list);
+			altm.pack();
+			Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+			// Compute and set the location so the frame is centered
+			int x = screen.width/2-altm.getSize().width/2;
+			int y = screen.height/2-altm.getSize().height/2;
+			altm.setLocation(x, y);
+			altm.setTitle("Non-Acknowledged Patients");
+			altm.setVisible(true);
+			altm.table.addMouseListener(new MouseAdapter(){
+				public void mousePressed(MouseEvent e){
+					JTable table = (JTable) e.getSource();
+					if(e.isPopupTrigger()){
+						//http://www.stupidjavatricks.com/2005/11/jtable-right-click-row-selection/
+						Point p = e.getPoint();
+						int rowNumber = table.rowAtPoint(p);
+						ListSelectionModel model = table.getSelectionModel();
+						model.setSelectionInterval(rowNumber, rowNumber);
+						int row = table.getSelectedRow();
+						doContextMenu(e, row);
+					}
 				}
-			}
-			
-			public void mouseReleased(MouseEvent e){
-				JTable table = (JTable) e.getSource();
-				if(e.isPopupTrigger()){
-					//http://www.stupidjavatricks.com/2005/11/jtable-right-click-row-selection/
-					Point p = e.getPoint();
-					int rowNumber = table.rowAtPoint(p);
-					ListSelectionModel model = table.getSelectionModel();
-					model.setSelectionInterval(rowNumber, rowNumber);
-					int row = table.getSelectedRow();
-					doContextMenu(e, row);
+				
+				public void mouseReleased(MouseEvent e){
+					JTable table = (JTable) e.getSource();
+					if(e.isPopupTrigger()){
+						//http://www.stupidjavatricks.com/2005/11/jtable-right-click-row-selection/
+						Point p = e.getPoint();
+						int rowNumber = table.rowAtPoint(p);
+						ListSelectionModel model = table.getSelectionModel();
+						model.setSelectionInterval(rowNumber, rowNumber);
+						int row = table.getSelectedRow();
+						doContextMenu(e, row);
+					}
 				}
-			}
-			
-			private void doContextMenu(MouseEvent e, int row){
-				ResolveContextMenu menu = new ResolveContextMenu(row, altm);
-				menu.show(e.getComponent(), e.getX(), e.getY());
-			}
-		});
-		
+				
+				private void doContextMenu(MouseEvent e, int row){
+					ResolveContextMenu menu = new ResolveContextMenu(row, altm);
+					menu.show(e.getComponent(), e.getX(), e.getY());
+				}
+			});
+		}
 	}
 	
 	private void showResolveWindow() {
