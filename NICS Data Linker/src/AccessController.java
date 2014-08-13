@@ -219,6 +219,7 @@ public class AccessController {
 		JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to write information to.");
 		if(!defaultAccessPath.equals("")){
 			fc = new FileChooser(defaultAccessPath);
+			fc.setFileFilter(new AccessFileFilter(".mdb"));
 		}else{
 			fc = new FileChooser();
 		}
@@ -262,6 +263,7 @@ public class AccessController {
 		JOptionPane.showMessageDialog(null, "Please select the Microsoft Access Database to write information to.");
 		if(!defaultAccessPath.equals("")){
 			fc = new FileChooser(defaultAccessPath);
+			fc.setFileFilter(new AccessFileFilter(".mdb"));
 		}else{
 			fc = new FileChooser();
 		}
@@ -287,6 +289,7 @@ public class AccessController {
 		FileChooser fc;
 		if(!defaultAccessPath.equals("")){
 			fc = new FileChooser(defaultAccessPath);
+			fc.setFileFilter(new AccessFileFilter(".mdb"));
 		}else{
 			fc = new FileChooser();
 		}
@@ -325,6 +328,7 @@ public class AccessController {
 		FileChooser fc;
 		if(!defaultAccessPath.equals("")){
 			fc = new FileChooser(defaultAccessPath);
+			fc.setFileFilter(new AccessFileFilter(".mdb"));
 		}else{
 			fc = new FileChooser();
 		}
@@ -358,6 +362,7 @@ public class AccessController {
 		FileChooser fc;
 		if(!defaultAccessPath.equals("")){
 			fc = new FileChooser(defaultAccessPath);
+			fc.setFileFilter(new AccessFileFilter(".mdb"));
 		}else{
 			fc = new FileChooser();
 		}

@@ -132,6 +132,10 @@ public class FileChooser {
 		this.dirPath = dirPath;
 	}
 	
+	public void setFileFilter(AccessFileFilter aff){
+		fc.setFileFilter(aff);
+	}
+	
 	public String getDirPath(){
 		return this.dirPath;
 	}

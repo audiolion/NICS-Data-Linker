@@ -18,7 +18,6 @@ import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Properties;
-import java.util.prefs.Preferences;
 
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
@@ -253,12 +252,14 @@ public class GUI extends JFrame implements ActionListener{
 	
 	/**
 	 * Creates the GUI frame and centers it on the user's screen
+	 * @param nicsIcon 
 	 */
-	protected static void createAndShowGUI(){
+	protected static void createAndShowGUI(ImageIcon nicsIcon){
 		JFrame f = null;
-		f = new GUI("Patient Information Verifier");
+		f = new GUI("NICS Data Linker");
 		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		f.setPreferredSize(new Dimension(500,400));
+		f.setIconImage(nicsIcon.getImage());
 		f.pack();
 		// Get the current screen's size
 		Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
@@ -281,7 +282,14 @@ public class GUI extends JFrame implements ActionListener{
 		Runnable doCreateAndShowGUI = new Runnable(){
 			@Override
 			public void run(){
-				createAndShowGUI();
+				java.net.URL path = this.getClass().getResource("/folder-links-icon.png");
+				BufferedImage imgs = null;
+				try{
+					imgs = ImageIO.read(path);
+				}catch(IOException e){
+				}
+				ImageIcon nicsIcon = new ImageIcon(imgs);
+				createAndShowGUI(nicsIcon);
 			}
 		};
 		try{
