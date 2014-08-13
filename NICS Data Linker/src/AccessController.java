@@ -19,7 +19,7 @@ import com.healthmarketscience.jackcess.*;
  * to interface with a Microsoft Access Database.
  * 
  * @author Ryan Robert Castner - ryancastner@msn.com
- * @version 1.0 - 8/20/2013
+ * @version 2.0 - 8/13/2014
  *
  */
 
@@ -209,7 +209,8 @@ public class AccessController {
 		if(filePaths[0].equalsIgnoreCase("No Selection")){
 			return;
 		}
-		String filePath = fc.getDirPath();		
+		String filePath = fc.getDirPath();
+		
 		ArrayList<String> data = fr.readFile(filePaths);
 		ArrayList<String> nics = fr.getNicsData(data);
 		if(nics.size() == 0){

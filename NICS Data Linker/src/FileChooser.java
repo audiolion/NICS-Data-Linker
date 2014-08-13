@@ -1,5 +1,12 @@
+import java.awt.Component;
+import java.awt.HeadlessException;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 
 /**
@@ -20,8 +27,23 @@ public class FileChooser {
 	public FileChooser(){
 		fc = new JFileChooser();
 	}
+	@SuppressWarnings("serial")
 	public FileChooser(String filePath){
-		fc = new JFileChooser(filePath);
+		fc = new JFileChooser(filePath){
+			@Override
+			protected JDialog createDialog(Component parent) throws HeadlessException{
+				JDialog dialog = super.createDialog(parent);
+				java.net.URL path = this.getClass().getResource("/folder-links-icon.png");
+				BufferedImage imgs = null;
+				try{
+					imgs = ImageIO.read(path);
+				}catch(IOException e){
+				}
+				ImageIcon nicsIcon = new ImageIcon(imgs);
+				dialog.setIconImage(nicsIcon.getImage());
+				return dialog;
+			}
+		};
 		dirPath = filePath;
 	}
 	

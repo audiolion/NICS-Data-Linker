@@ -80,6 +80,7 @@ public class GUI extends JFrame implements ActionListener{
 	private String defaultFilePath;
 	private String defaultAccessPath;
 	
+	private static ImageIcon nicsIcon;
 	/**
 	 * Constructor for GUI window
 	 * @param title - the title of the window
@@ -288,7 +289,7 @@ public class GUI extends JFrame implements ActionListener{
 					imgs = ImageIO.read(path);
 				}catch(IOException e){
 				}
-				ImageIcon nicsIcon = new ImageIcon(imgs);
+				nicsIcon = new ImageIcon(imgs);
 				createAndShowGUI(nicsIcon);
 			}
 		};
@@ -333,6 +334,7 @@ public class GUI extends JFrame implements ActionListener{
 				int y = screen.height/2-altm.getSize().height/2;
 				altm.setLocation(x, y);
 				altm.setTitle("Acknowledged Patients");
+				altm.setIconImage(nicsIcon.getImage());
 				altm.setVisible(true);
 			}
 		}
@@ -349,6 +351,7 @@ public class GUI extends JFrame implements ActionListener{
 				int y = screen.height/2-altm.getSize().height/2;
 				altm.setLocation(x, y);
 				altm.setTitle("Non-Acknowledged Patients");
+				altm.setIconImage(nicsIcon.getImage());
 				altm.setVisible(true);
 			}
 		}
@@ -411,6 +414,7 @@ public class GUI extends JFrame implements ActionListener{
 			altm.setLocation(x, y);
 			altm.setTitle("Non-Acknowledged Patients");
 			altm.setVisible(true);
+			altm.setIconImage(nicsIcon.getImage());
 			altm.table.addMouseListener(new MouseAdapter(){
 				public void mousePressed(MouseEvent e){
 					JTable table = (JTable) e.getSource();
@@ -457,6 +461,7 @@ public class GUI extends JFrame implements ActionListener{
 		altm.setLocation(x, y);
 		altm.setTitle("Non-Acknowledged Patients");
 		altm.setVisible(true);
+		altm.setIconImage(nicsIcon.getImage());
 		altm.table.addMouseListener(new MouseAdapter(){
 			public void mousePressed(MouseEvent e){
 				JTable table = (JTable) e.getSource();

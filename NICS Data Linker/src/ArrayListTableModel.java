@@ -40,6 +40,10 @@ public class ArrayListTableModel extends JFrame {
 		MyModel mm = new MyModel(al, header);
 		table = new JTable(mm);
 		sorter = new TableRowSorter<MyModel>(mm);
+		List<RowSorter.SortKey> sortKeys = new ArrayList<RowSorter.SortKey>();
+		sortKeys.add(new RowSorter.SortKey(3, SortOrder.DESCENDING));
+		sortKeys.add(new RowSorter.SortKey(0, SortOrder.ASCENDING));
+		sorter.setSortKeys(sortKeys);
 		DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
 		centerRenderer.setHorizontalAlignment(JLabel.CENTER);
 		((DefaultTableCellRenderer)table.getTableHeader().getDefaultRenderer())
